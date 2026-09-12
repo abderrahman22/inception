@@ -1,14 +1,17 @@
 #!/bin/bash
 
-service mariadb start
-sleep 5
+if [ ! -d "/var/lib/mysql/$MYSQL_DATABASE" ]; then
+    echo "Creating database setup file..."
+    
+    mysql_install_db --user=mysql --datadir=/var/lib/mysql > /dev/null
 
-echo "CREATE DATABASE IF NOT EXISTS ${SQL_DATABASE};
-CREATE USER IF NOT EXISTS '${SQL_USER}'@'%' IDENTIFIED BY '${SQL_PASSWORD}';
-GRANT ALL PRIVILEGES ON ${SQL_DATABASE}.* TO '${SQL_USER}'@'%';
-ALTER USER 'root'@'localhost' IDENTIFIED BY '${SQL_ROOT_PASSWORD}';
-FLUSH PRIVILEGES;" | mariadb -u root
+    echo "CREATE DATABASE IF NOT EXISTS \`$MYSQL_DATABASE\`;" > /tmp/init.sql
+    echo "CREATE USER IF NOT EXISTS '$MYSQL_USER'@'%' IDENTIFIED BY '$MYSQL_PASSWORD';" >> /tmp/init.sql
+    echo "GRANT ALL PRIVILEGES ON \`$MYSQL_DATABASE\`.* TO '$MYSQL_USER'@'%';" >> /tmp/init.sql
+    echo "ALTER USER 'root'@'localhost' IDENTIFIED BY '$MYSQL_ROOT_PASSWORD';" >> /tmp/init.sql
+    echo "FLUSH PRIVILEGES;" >> /tmp/init.sql
 
-mysqladmin -u root -p${SQL_ROOT_PASSWORD} shutdown
-
-exec mariadbd-safe
+    exec mysqld --user=mysql --init-file=/tmp/init.sql
+else
+    exec mysqld --user=mysql
+fi
