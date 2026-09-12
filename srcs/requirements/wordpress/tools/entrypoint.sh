@@ -1,44 +1,28 @@
 #!/bin/bash
-set -e
 
-mkdir -p /var/www/wordpress
-cd /var/www/wordpress
-
-if [ ! -f /usr/local/bin/wp ]; then
-    wget -q https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
-    chmod +x wp-cli.phar
-    mv wp-cli.phar /usr/local/bin/wp
-fi
-
-# Wait until MariaDB actually accepts connections, not just "container started"
-echo "Waiting for MariaDB..."
-until php -r "new mysqli('mariadb', '${SQL_USER}', '${SQL_PASSWORD}', '${SQL_DATABASE}');" 2>/dev/null; do
-    sleep 2
-done
-echo "MariaDB is up."
-
-if [ ! -f wp-config.php ]; then
+if [ ! -f "wp-config.php" ]; then
+    echo "Downloading WordPress..."
     wp core download --allow-root
 
-    wp config create \
-        --dbname=${SQL_DATABASE} \
-        --dbuser=${SQL_USER} \
-        --dbpass=${SQL_PASSWORD} \
-        --dbhost=mariadb \
-        --allow-root
+    echo "Configuring database connection..."
+    #connect the wordpress with mariadb's database that was created
+    wp config create --dbname=$MYSQL_DATABASE \
+                     --dbuser=$MYSQL_USER \
+                     --dbpass=$MYSQL_PASSWORD \
+                     --dbhost=mariadb \
+                     --allow-root
 
-    wp core install \
-        --url=localhost \
-        --title="Inception Abdo" \
-        --admin_user=${WP_ADMIN} \
-        --admin_password=${WP_ADMIN_PASSWORD} \
-        --admin_email=admin@abdo.com \
-        --allow-root
+    echo "Installing WordPress..."
+    wp core install --url=$DOMAIN_NAME \
+                    --title="Inception WP" \
+                    --admin_user=$WP_ADMIN_USER \
+                    --admin_password=$WP_ADMIN_PASSWORD \
+                    --admin_email=$WP_ADMIN_EMAIL \
+                    --allow-root
 
-    wp user create ${WP_USER} user@abdo.com \
-        --user_pass=${WP_USER_PASSWORD} \
-        --role=author \
-        --allow-root
+    echo "Creating a second user..."
+    wp user create $WP_USER $WP_EMAIL --role=author --user_pass=$WP_PASSWORD --allow-root
 fi
 
-exec php-fpm8.2 -F
+#run the phpfpm in the foregrund (PID 1) to make the container alive
+exec /usr/sbin/php-fpm8.2 -F

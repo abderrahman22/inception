@@ -1,57 +1,57 @@
+version: '3'
+
 services:
   mariadb:
     build: ./requirements/mariadb
     container_name: mariadb
-    env_file:
-      - .env
+    restart: always
+    env_file: .env
     volumes:
-      - db_data:/var/lib/mysql
+      - db-volume:/var/lib/mysql
     networks:
       - inception
-    restart: on-failure
 
   wordpress:
     build: ./requirements/wordpress
     container_name: wordpress
-    env_file:
-      - .env
-    depends_on:
-      - mariadb
+    restart: always
+    env_file: .env
     volumes:
-      - wp_data:/var/www/wordpress
+      - wp-volume:/var/www/html
     networks:
       - inception
-    restart: on-failure
+    depends_on:
+      - mariadb
 
-  # nginx:
-  #   build: ./requirements/nginx
-  #   container_name: nginx
-  #   env_file:
-  #     - .env
-  #   depends_on:
-  #     - wordpress
-  #   ports:
-  #     - "443:443"
-  #   volumes:
-  #     - wp_data:/var/www/wordpress
-  #   networks:
-  #     - inception
-  #   restart: on-failure
+  nginx:
+    build: ./requirements/nginx
+    container_name: nginx
+    restart: always
+    ports:
+      - "443:443"
+    volumes:
+      - wp-volume:/var/www/html
+    networks:
+      - inception
+    depends_on:
+      - wordpress
 
 networks:
   inception:
     driver: bridge
 
 volumes:
-  db_data:
+  db-volume:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: /home/inception/data/db_data
-  wp_data:
+      #change path
+      device: /home/lilyoung/data/mariadb
+  wp-volume:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: /home/inception/data/wp_data
+      # change path
+      device: /home/lilyoung/data/wordpress

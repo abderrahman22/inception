@@ -1,33 +1,17 @@
 #!/bin/bash
-set -e
 
-DATADIR=/var/lib/mysql
+if [ ! -d "/var/lib/mysql/$MYSQL_DATABASE" ]; then
+    echo "Creating database setup file..."
+    
+    mysql_install_db --user=mysql --datadir=/var/lib/mysql > /dev/null
 
-# First-run: initialize the data directory if the volume is empty
-if [ ! -d "${DATADIR}/mysql" ]; then
-    echo "No existing database found, initializing..."
-    mariadb-install-db --user=mysql --datadir=${DATADIR} > /dev/null
+    echo "CREATE DATABASE IF NOT EXISTS \`$MYSQL_DATABASE\`;" > /tmp/init.sql
+    echo "CREATE USER IF NOT EXISTS '$MYSQL_USER'@'%' IDENTIFIED BY '$MYSQL_PASSWORD';" >> /tmp/init.sql
+    echo "GRANT ALL PRIVILEGES ON \`$MYSQL_DATABASE\`.* TO '$MYSQL_USER'@'%';" >> /tmp/init.sql
+    echo "ALTER USER 'root'@'localhost' IDENTIFIED BY '$MYSQL_ROOT_PASSWORD';" >> /tmp/init.sql
+    echo "FLUSH PRIVILEGES;" >> /tmp/init.sql
 
-    # Start MariaDB temporarily (no networking) to run setup
-    mysqld_safe --datadir=${DATADIR} --skip-networking &
-
-    # Wait until it's actually ready instead of a fixed sleep
-    until mysqladmin ping --silent 2>/dev/null; do
-        sleep 1
-    done
-
-    mariadb -u root <<-EOSQL
-        CREATE DATABASE IF NOT EXISTS ${SQL_DATABASE};
-        CREATE USER IF NOT EXISTS '${SQL_USER}'@'%' IDENTIFIED BY '${SQL_PASSWORD}';
-        GRANT ALL PRIVILEGES ON ${SQL_DATABASE}.* TO '${SQL_USER}'@'%';
-        ALTER USER 'root'@'localhost' IDENTIFIED BY '${SQL_ROOT_PASSWORD}';
-        FLUSH PRIVILEGES;
-EOSQL
-
-    mysqladmin -u root -p"${SQL_ROOT_PASSWORD}" shutdown
-    echo "Initialization complete."
+    exec mysqld --user=mysql --init-file=/tmp/init.sql
 else
-    echo "Existing database found, skipping initialization."
+    exec mysqld --user=mysql
 fi
-
-exec mysqld_safe --datadir=${DATADIR}
