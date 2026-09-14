@@ -2,6 +2,7 @@ version: '3'
 
 services:
   mariadb:
+    image : mariadb:maria
     build: ./requirements/mariadb
     container_name: mariadb
     restart: always
@@ -12,6 +13,7 @@ services:
       - inception
 
   wordpress:
+    image : wordpress:wordpress
     build: ./requirements/wordpress
     container_name: wordpress
     restart: always
@@ -24,6 +26,7 @@ services:
       - mariadb
 
   nginx:
+    image : nginx:nginx
     build: ./requirements/nginx
     container_name: nginx
     restart: always
@@ -46,12 +49,10 @@ volumes:
     driver_opts:
       type: none
       o: bind
-      #change path
-      device: /home/lilyoung/data/mariadb
+      device: /home/inception/data/mariadb
   wp-volume:
     driver: local
     driver_opts:
       type: none
       o: bind
-      # change path
-      device: /home/lilyoung/data/wordpress
+      device: /home/inception/data/wordpress

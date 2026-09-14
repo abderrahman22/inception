@@ -9,7 +9,6 @@ RUN apt-get update && apt-get install -y \
 
 RUN sed -i 's/listen = \/run\/php\/php8.2-fpm.sock/listen = 9000/' /etc/php/8.2/fpm/pool.d/www.conf
 
-# 9ad dossier fin kaykhdem PHP
 RUN mkdir -p /run/php
 
 RUN curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar && \

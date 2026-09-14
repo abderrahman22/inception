@@ -5,7 +5,6 @@ if [ ! -f "wp-config.php" ]; then
     wp core download --allow-root
 
     echo "Configuring database connection..."
-    #connect the wordpress with mariadb's database that was created
     wp config create --dbname=$MYSQL_DATABASE \
                      --dbuser=$MYSQL_USER \
                      --dbpass=$MYSQL_PASSWORD \
@@ -24,5 +23,4 @@ if [ ! -f "wp-config.php" ]; then
     wp user create $WP_USER $WP_EMAIL --role=author --user_pass=$WP_PASSWORD --allow-root
 fi
 
-#run the phpfpm in the foregrund (PID 1) to make the container alive
 exec /usr/sbin/php-fpm8.2 -F
